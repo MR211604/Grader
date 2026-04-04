@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "622933732664",
+    "project_id": "grader-5114c",
+    "storage_bucket": "grader-5114c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:622933732664:android:80ac9e0b0c1a93459865cd",
+        "android_client_info": {
+          "package_name": "com.example.grader"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuogHeagGvMKqPGiCapa0yKR8IieuoP5Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

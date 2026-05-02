@@ -119,17 +119,6 @@ fun LoginScreen(
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                TextButton(
-                    onClick = onForgotClick,
-                    contentPadding = PaddingValues(0.dp),
-                    modifier = Modifier.height(24.dp)
-                ) {
-                    Text(
-                        text = "Forgot?",
-                        color = primaryBlue,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
             }
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(

@@ -81,11 +81,6 @@ fun DashboardScreen(
                         )
                     }
                 },
-                actions = {
-                    IconButton(onClick = { /* TODO */ }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
@@ -114,6 +109,8 @@ fun DashboardScreen(
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
             // Header Section
             Row(
                 modifier = Modifier
@@ -205,7 +202,11 @@ fun AssessmentCard(assessment: Assessment, primaryBlue: Color) {
                 // Status Badge
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    color = when (assessment.status) {
+                        "active" -> Color(0xFF0C8CBF).copy(alpha = 0.1f)
+                        "draft" -> Color(0xFF818181).copy(alpha = 0.1f)
+                        else -> Color(0xFF0CBF15).copy(alpha = 0.1f)
+                    },
                     modifier = Modifier.padding(start = 8.dp)
                 ) {
                     Text(
@@ -213,7 +214,11 @@ fun AssessmentCard(assessment: Assessment, primaryBlue: Color) {
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = when (assessment.status) {
+                            "active" -> Color(0xFF0C8CBF)
+                            "draft" -> Color(0xFF818181)
+                            else -> Color(0xFF0CBF15)
+                        }
                     )
                 }
             }

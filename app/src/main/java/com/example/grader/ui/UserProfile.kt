@@ -27,13 +27,15 @@ import com.example.grader.ui.components.NavRoute
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserProfileScreen() {
+fun UserProfileScreen(
+    modifier: Modifier = Modifier
+) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(text = "Profile", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
@@ -43,27 +45,33 @@ fun UserProfileScreen() {
                 onNavigate = { /* TODO */ }
             )
         },
-        containerColor = Color(0xFFF9FAFC)
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
+        Column(
+            modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
-                ProfileHeader()
-                Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
-                Spacer(modifier = Modifier.height(24.dp))
-                CoursesSection()
-                Spacer(modifier = Modifier.height(32.dp))
-                LogoutButton()
-                Spacer(modifier = Modifier.height(32.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            LazyColumn(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    ProfileHeader()
+                    Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(24.dp))
+                    CoursesSection()
+                    Spacer(modifier = Modifier.height(32.dp))
+                    LogoutButton()
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
             }
         }
+
     }
 }
 
@@ -80,7 +88,7 @@ fun ProfileHeader() {
                 modifier = Modifier
                     .size(90.dp)
                     .align(Alignment.Center),
-                color = Color(0xFFF0F2F5)
+                color = Color(0xFFD3D3D3)
             ) {
                 Icon(
                     imageVector = Icons.Filled.Person,
@@ -141,7 +149,7 @@ fun ProfileHeader() {
 fun InfoCard(modifier: Modifier = Modifier, label: String, value: String) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
         shape = RoundedCornerShape(12.dp),
         border = CardDefaults.outlinedCardBorder(true).copy(brush = androidx.compose.ui.graphics.SolidColor(Color.LightGray.copy(alpha = 0.5f)))
     ) {
@@ -219,7 +227,7 @@ data class CourseItem(val title: String, val code: String, val progress: String)
 fun CourseCard(course: CourseItem) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
         shape = RoundedCornerShape(12.dp),
         border = CardDefaults.outlinedCardBorder(true).copy(brush = androidx.compose.ui.graphics.SolidColor(Color.LightGray.copy(alpha = 0.5f)))
     ) {

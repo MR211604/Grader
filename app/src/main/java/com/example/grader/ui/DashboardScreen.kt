@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
@@ -50,9 +49,10 @@ val sampleAssessments = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
+    currentRoute: NavRoute = NavRoute.EXAMS,
+    onNavigate: (NavRoute) -> Unit = {},
     onNavigateToCreateExam: () -> Unit = {}
 ) {
-    var currentRoute by remember { mutableStateOf(NavRoute.EXAMS) }
     val primaryBlue = Color(0xFF0C5CBF)
 
     Scaffold(
@@ -99,7 +99,7 @@ fun DashboardScreen(
         bottomBar = {
             GraderBottomNavigation(
                 currentRoute = currentRoute,
-                onNavigate = { currentRoute = it }
+                onNavigate = onNavigate
             )
         }
     ) { innerPadding ->

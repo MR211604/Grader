@@ -10,7 +10,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,7 +27,8 @@ import com.example.grader.ui.components.NavRoute
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserProfileScreen(
-    modifier: Modifier = Modifier
+    currentRoute: NavRoute = NavRoute.PROFILE,
+    onNavigate: (NavRoute) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -41,13 +41,13 @@ fun UserProfileScreen(
         },
         bottomBar = {
             GraderBottomNavigation(
-                currentRoute = NavRoute.PROFILE,
-                onNavigate = { /* TODO */ }
+                currentRoute = currentRoute,
+                onNavigate = onNavigate
             )
         },
     ) { paddingValues ->
         Column(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.background)

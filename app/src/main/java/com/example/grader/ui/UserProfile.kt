@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.grader.contants.BACKGROUND_COLOR
+import com.example.grader.contants.DIVIDER_COLOR
 
 import com.example.grader.ui.components.GraderBottomNavigation
 import com.example.grader.ui.components.NavRoute
@@ -35,7 +37,7 @@ fun UserProfileScreen(
             TopAppBar(
                 title = { Text(text = "Profile", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color.White
                 )
             )
         },
@@ -50,9 +52,9 @@ fun UserProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
+                .background(BACKGROUND_COLOR)
         ) {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            HorizontalDivider(color = DIVIDER_COLOR, thickness = 1.dp)
             LazyColumn(
                 modifier = Modifier
                     .padding(horizontal = 16.dp),
@@ -149,7 +151,7 @@ fun ProfileHeader() {
 fun InfoCard(modifier: Modifier = Modifier, label: String, value: String) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp),
         border = CardDefaults.outlinedCardBorder(true).copy(brush = androidx.compose.ui.graphics.SolidColor(Color.LightGray.copy(alpha = 0.5f)))
     ) {
@@ -227,7 +229,7 @@ data class CourseItem(val title: String, val code: String, val progress: String)
 fun CourseCard(course: CourseItem) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp),
         border = CardDefaults.outlinedCardBorder(true).copy(brush = androidx.compose.ui.graphics.SolidColor(Color.LightGray.copy(alpha = 0.5f)))
     ) {

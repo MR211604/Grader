@@ -28,8 +28,22 @@ class MainActivity : ComponentActivity() {
                     var currentRoute by remember { mutableStateOf(NavRoute.EXAMS) }
                     
                     when (currentRoute) {
-                        NavRoute.EXAMS, NavRoute.STATS -> {
-                            DashboardScreen(
+                        NavRoute.EXAMS -> {
+                            val isUserStudent by remember { mutableStateOf(true) } // Mock condition
+                            if (isUserStudent) {
+                                com.example.grader.ui.StudentScreen(
+                                    currentRoute = currentRoute,
+                                    onNavigate = { currentRoute = it }
+                                )
+                            } else {
+                                DashboardScreen(
+                                    currentRoute = currentRoute,
+                                    onNavigate = { currentRoute = it }
+                                )
+                            }
+                        }
+                        NavRoute.STATS -> {
+                            com.example.grader.ui.StatsView(
                                 currentRoute = currentRoute,
                                 onNavigate = { currentRoute = it }
                             )

@@ -1,9 +1,11 @@
 package com.example.grader.ui.components
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -14,7 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.grader.contants.DIVIDER_COLOR
+import com.example.grader.ui.StudentScreen
 
 enum class NavRoute(val title: String, val icon: ImageVector) {
     EXAMS("Exams", Icons.Outlined.Description),
@@ -30,27 +35,37 @@ fun GraderBottomNavigation(
 ) {
     val primaryBlue = Color(0xFF0C5CBF)
 
-    NavigationBar(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        tonalElevation = 8.dp
-    ) {
-        NavRoute.entries.forEach { route ->
-            val isSelected = currentRoute == route
-            NavigationBarItem(
-                selected = isSelected,
-                onClick = { onNavigate(route) },
-                icon = { Icon(route.icon, contentDescription = route.title) },
-                label = { Text(route.title) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = primaryBlue,
-                    selectedTextColor = primaryBlue,
-                    indicatorColor = primaryBlue.copy(alpha = 0.1f),
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+    Column(modifier = modifier) {
+        HorizontalDivider(color = DIVIDER_COLOR, thickness = 1.dp)
+        NavigationBar(
+            containerColor = Color.White,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            tonalElevation = 8.dp
+        ) {
+            NavRoute.entries.forEach { route ->
+                val isSelected = currentRoute == route
+                NavigationBarItem(
+                    selected = isSelected,
+                    onClick = { onNavigate(route) },
+                    icon = { Icon(route.icon, contentDescription = route.title) },
+                    label = { Text(route.title) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = primaryBlue,
+                        selectedTextColor = primaryBlue,
+                        indicatorColor = primaryBlue.copy(alpha = 0.1f),
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
-            )
+            }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun StudentScreenPreview() {
+    MaterialTheme {
+        GraderBottomNavigation(NavRoute.EXAMS, {})
     }
 }

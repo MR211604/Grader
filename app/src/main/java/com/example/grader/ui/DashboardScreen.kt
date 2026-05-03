@@ -82,7 +82,7 @@ fun DashboardScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color.White
                 )
             )
         },
@@ -166,7 +166,7 @@ fun AssessmentCard(assessment: Assessment, primaryBlue: Color) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         border = BorderStroke(1.dp, primaryBlue.copy(alpha = 0.4f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

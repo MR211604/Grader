@@ -73,7 +73,7 @@ fun ExamCreatorScreen(
                     Text(
                         "Crear Nueva Evaluación",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = primaryBlue
+                        color = Color.Black
                     )
                 },
                 modifier = Modifier.drawBehind {

@@ -31,7 +31,10 @@ import com.example.grader.ui.components.NavRoute
 @Composable
 fun UserProfileScreen(
     currentRoute: NavRoute = NavRoute.PROFILE,
-    onNavigate: (NavRoute) -> Unit = {}
+    onNavigate: (NavRoute) -> Unit = {},
+    onLogoutClick: () -> Unit = {},
+    userName: String = "",
+    userEmail: String = ""
 ) {
     Scaffold(
         topBar = {
@@ -77,13 +80,13 @@ fun UserProfileScreen(
             ) {
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
-                    ProfileHeader()
+                    ProfileHeader(userEmail, userName)
                     Spacer(modifier = Modifier.height(24.dp))
                     HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
                     Spacer(modifier = Modifier.height(24.dp))
                     CoursesSection()
                     Spacer(modifier = Modifier.height(32.dp))
-                    LogoutButton()
+                    LogoutButton(onLogoutClick = onLogoutClick)
                     Spacer(modifier = Modifier.height(32.dp))
                 }
             }
@@ -93,7 +96,10 @@ fun UserProfileScreen(
 }
 
 @Composable
-fun ProfileHeader() {
+fun ProfileHeader(
+    userEmail: String = "",
+    userName: String = ""
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -130,14 +136,14 @@ fun ProfileHeader() {
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            text = "Alex Thompson",
+            text = userName,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )
         
         Text(
-            text = "a.thompson@university.edu",
+            text = userEmail,
             fontSize = 14.sp,
             color = Color.Gray
         )
@@ -156,7 +162,7 @@ fun ProfileHeader() {
             InfoCard(
                 modifier = Modifier.weight(1f),
                 label = "MATRÍCULA",
-                value = "2023"
+                value = "2026"
             )
         }
     }
@@ -279,9 +285,9 @@ fun CourseCard(course: CourseItem) {
 }
 
 @Composable
-fun LogoutButton() {
+fun LogoutButton(onLogoutClick: () -> Unit) {
     OutlinedButton(
-        onClick = { /* TODO */ },
+        onClick = { onLogoutClick() },
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp),

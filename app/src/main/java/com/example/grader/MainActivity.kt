@@ -45,7 +45,10 @@ class MainActivity : ComponentActivity() {
                 if (isUserLoggedIn) {
                     GraderNavDisplay(
                         firestoreAuth = firestoreAuth,
-                        onLogout = { isUserLoggedIn = false }
+                        onLogout = {
+                            firestoreAuth.logout()
+                            isUserLoggedIn = false
+                        }
                     )
                 } else {
                     AuthNavDisplay(
@@ -64,9 +67,7 @@ class MainActivity : ComponentActivity() {
         onLogout: () -> Unit
     ) {
         val isAdmin = firestoreAuth.currentUser?.email == "administrador@gmail.com"
-
-        // Determine initial destination based on role
-        val startKey: NavKey = if (isAdmin) NavKey.ExamCreator else NavKey.Exams
+        val startKey: NavKey = NavKey.Exams
         val backStack: SnapshotStateList<NavKey> = remember {
             mutableListOf(startKey).toMutableStateList()
         }
@@ -93,14 +94,6 @@ class MainActivity : ComponentActivity() {
                 }
             },
             entryProvider = entryProvider {
-                // ── ExamCreator (Admin "home") ──────────────────────────────
-                entry<NavKey.ExamCreator> { _ ->
-                    ExamCreatorScreen(
-                        onNavigateBack = {
-                            navigateToTab(NavRoute.EXAMS)
-                        }
-                    )
-                }
 
                 // ── Exams / Student list ─────────────────────────────────────
                 entry<NavKey.Exams> { _ ->
@@ -121,6 +114,15 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
+                }
+
+                // ── ExamCreatorScreen (Admin route) ──────────────────────────────
+                entry<NavKey.ExamCreator> { _ ->
+                    ExamCreatorScreen(
+                        onNavigateBack = {
+                            navigateToTab(NavRoute.EXAMS)
+                        }
+                    )
                 }
 
                 // ── Quiz (pushed on top of Exams) ────────────────────────────
@@ -147,6 +149,15 @@ class MainActivity : ComponentActivity() {
                 // ── Profile tab ──────────────────────────────────────────────
                 entry<NavKey.Profile> { _ ->
                     UserProfileScreen(
+                        onLogoutClick = {
+                            onLogout()
+                        },
+                        userEmail = firestoreAuth.currentUser?.email.toString(),
+                        userName = firestoreAuth.currentUser?.email
+                            ?.substringBefore("@")
+                            ?.split(".")
+                            ?.joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
+                            ?: firestoreAuth.currentUser?.displayName.toString(),
                         currentRoute = NavRoute.PROFILE,
                         onNavigate = { route -> navigateToTab(route) }
                     )

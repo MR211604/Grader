@@ -19,12 +19,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.grader.contants.DIVIDER_COLOR
-import com.example.grader.ui.StudentScreen
+
 
 enum class NavRoute(val title: String, val icon: ImageVector) {
-    EXAMS("Exams", Icons.Outlined.Description),
-    STATS("Stats", Icons.Outlined.GridView),
-    PROFILE("Profile", Icons.Outlined.Person)
+    EXAMS("Examenes", Icons.Outlined.Description),
+    STATS("Estadísticas", Icons.Outlined.GridView),
+    PROFILE("Perfil", Icons.Outlined.Person)
 }
 
 @Composable

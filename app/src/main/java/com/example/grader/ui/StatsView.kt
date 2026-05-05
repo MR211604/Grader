@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
@@ -74,12 +75,21 @@ fun StatsView(
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Stats Viewer", 
+                            text = "Grader - Estadísticas",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 20.sp
                         )
                     }
+                },
+                modifier = Modifier.drawBehind {
+                    val borderSize = 1.dp.toPx()
+                    drawLine(
+                        color = Color(0xFFE0E0E0),
+                        start = Offset(0f, size.height),
+                        end = Offset(size.width, size.height),
+                        strokeWidth = borderSize
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White
@@ -96,13 +106,13 @@ fun StatsView(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(innerPadding)
                 .background(BACKGROUND_COLOR)
         ) {
             HorizontalDivider(color = DIVIDER_COLOR, thickness = 1.dp)
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+                    .fillMaxSize(),
                 contentPadding = PaddingValues(20.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
@@ -110,7 +120,7 @@ fun StatsView(
                 item {
                     Column {
                         Text(
-                            text = "Performance Overview",
+                            text = "Visualización de rendimiento",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp
@@ -118,7 +128,7 @@ fun StatsView(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Track your academic progress and exam history.",
+                            text = "Lleva el control de tu progreso académico y registro de evaluaciones.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -135,21 +145,21 @@ fun StatsView(
                             modifier = Modifier.weight(1f),
                             icon = Icons.Outlined.TrendingUp,
                             value = "A-",
-                            label = "AVG GRADE",
+                            label = "NOTA PROM.",
                             iconColor = primaryBlue
                         )
                         StatCard(
                             modifier = Modifier.weight(1f),
                             icon = Icons.Outlined.MenuBook,
                             value = "24",
-                            label = "EXAMS",
+                            label = "EXAMENES",
                             iconColor = Color(0xFF00ACC1)
                         )
                         StatCard(
                             modifier = Modifier.weight(1f),
                             icon = Icons.Outlined.CheckCircle,
                             value = "98%",
-                            label = "PASS RATE",
+                            label = "APROBACIÓN",
                             iconColor = Color(0xFF333333)
                         )
                     }
@@ -171,11 +181,11 @@ fun StatsView(
                             ) {
                                 Column {
                                     Text(
-                                        text = "Grade Trends",
+                                        text = "Tendencias de notas",
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                                     )
                                     Text(
-                                        text = "Average performance (Last 6 Months)",
+                                        text = "Rendimiento promedio (Últimos 6 meses)",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -312,11 +322,11 @@ fun StatsView(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Recent Results",
+                            text = "Resultados recientes",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                         Text(
-                            text = "View All",
+                            text = "Ver todos",
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                             color = primaryBlue
                         )

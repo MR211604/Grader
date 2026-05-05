@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,7 +36,21 @@ fun UserProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "Profile", fontWeight = FontWeight.Bold) },
+                modifier = Modifier.drawBehind {
+                    val borderSize = 1.dp.toPx()
+                    drawLine(
+                        color = Color(0xFFE0E0E0),
+                        start = androidx.compose.ui.geometry.Offset(0f, size.height),
+                        end = androidx.compose.ui.geometry.Offset(size.width, size.height),
+                        strokeWidth = borderSize
+                    )
+                },
+                title = {
+                    Text(
+                        "Perfil del Estudiante",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White
                 )
@@ -135,12 +150,12 @@ fun ProfileHeader() {
         ) {
             InfoCard(
                 modifier = Modifier.weight(1f),
-                label = "STUDENT ID",
+                label = "ID DE ESTUDIANTE",
                 value = "STU-882910"
             )
             InfoCard(
                 modifier = Modifier.weight(1f),
-                label = "ENROLLED",
+                label = "MATRÍCULA",
                 value = "2023"
             )
         }
@@ -187,7 +202,7 @@ fun CoursesSection() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "CURRENT COURSES",
+                text = "CURSOS ACTIVOS",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.Gray,
@@ -199,7 +214,7 @@ fun CoursesSection() {
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
-                    text = "3 ACTIVE",
+                    text = "3 ACTIVOS",
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
@@ -287,7 +302,7 @@ fun LogoutButton() {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Logout",
+                text = "Cerrar sesión",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -302,9 +317,3 @@ fun UserProfilePreview() {
         UserProfileScreen()
     }
 }
-
-
-
-
-
-

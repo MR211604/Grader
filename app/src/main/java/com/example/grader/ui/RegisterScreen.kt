@@ -1,6 +1,5 @@
 package com.example.grader.ui
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,14 +22,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun LoginScreen(
-    onSignInClick: (String, String) -> Unit = { _, _ -> },
-    onRegisterClick: () -> Unit = {}
+fun RegisterScreen(
+    onRegisterClick: (String, String) -> Unit = { _, _ -> },
+    onBackToLoginClick: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val primaryBlue = Color(0xFF0C5CBF) // Matching the visual blue from the image
+    val primaryBlue = Color(0xFF0C5CBF)
 
     Column(
         modifier = Modifier
@@ -42,7 +41,6 @@ fun LoginScreen(
     ) {
         Spacer(modifier = Modifier.weight(1f))
 
-        // Header Logo
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = primaryBlue,
@@ -60,9 +58,8 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Subtitle Text
         Text(
-            text = "Accede a tus\nexamenes y lleva el control de\ntu progreso.",
+            text = "Crear nueva\ncuenta de usuario",
             style = MaterialTheme.typography.bodyLarge.copy(
                 lineHeight = 24.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -73,10 +70,9 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        // Student ID / Email Field
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "ID / Correo",
+                text = "Correo",
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -85,7 +81,7 @@ fun LoginScreen(
                 value = email,
                 onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("administrador@gmail.com") },
+                placeholder = { Text("ejemplo@gmail.com") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Email,
@@ -106,7 +102,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Password Field
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -124,7 +119,7 @@ fun LoginScreen(
                 value = password,
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("........ (dsm104)") },
+                placeholder = { Text("Mínimo 6 caracteres") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Lock,
@@ -146,9 +141,8 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Sign In Button
         Button(
-            onClick = { onSignInClick(email, password) },
+            onClick = { onRegisterClick(email, password) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -156,7 +150,7 @@ fun LoginScreen(
             colors = ButtonDefaults.buttonColors(containerColor = primaryBlue)
         ) {
             Text(
-                text = "Ingresar",
+                text = "Registrar",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = Color.White
             )
@@ -164,24 +158,23 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.weight(1.5f))
 
-        // Bottom Footer
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "No tienes una cuenta? ",
+                text = "¿Ya tienes cuenta? ",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             TextButton(
-                onClick = onRegisterClick,
+                onClick = onBackToLoginClick,
                 contentPadding = PaddingValues(0.dp),
                 modifier = Modifier.height(24.dp)
             ) {
                 Text(
-                    text = "Registrar",
+                    text = "Ingresar",
                     color = primaryBlue,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
                 )
@@ -192,10 +185,3 @@ fun LoginScreen(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    MaterialTheme {
-        LoginScreen()
-    }
-}

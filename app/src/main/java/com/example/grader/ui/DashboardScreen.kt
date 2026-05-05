@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -74,12 +75,21 @@ fun DashboardScreen(
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Grader Dashboard", 
+                            text = "Grader - Panel administrativo",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 20.sp
                         )
                     }
+                },
+                modifier = Modifier.drawBehind {
+                    val borderSize = 1.dp.toPx()
+                    drawLine(
+                        color = Color(0xFFE0E0E0),
+                        start = androidx.compose.ui.geometry.Offset(0f, size.height),
+                        end = androidx.compose.ui.geometry.Offset(size.width, size.height),
+                        strokeWidth = borderSize
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White
@@ -121,11 +131,11 @@ fun DashboardScreen(
             ) {
                 Column {
                     Text(
-                        text = "Active Assessments",
+                        text = "Evaluaciones activas",
                         style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
                     )
                     Text(
-                        text = "Manage your student examinations",
+                        text = "Maneja las evaluaciones de tus estudiantes",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -242,7 +252,7 @@ fun AssessmentCard(assessment: Assessment, primaryBlue: Color) {
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${assessment.questions} Questions",
+                        text = "${assessment.questions} Preguntas",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -290,7 +300,7 @@ fun AssessmentCard(assessment: Assessment, primaryBlue: Color) {
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "MODIFIED: ${assessment.modifiedDate}",
+                        text = "MODIFICADO: ${assessment.modifiedDate}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

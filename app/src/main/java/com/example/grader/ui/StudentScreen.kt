@@ -27,17 +27,18 @@ import com.example.grader.ui.components.NavRoute
 @Composable
 fun StudentScreen(
     currentRoute: NavRoute = NavRoute.EXAMS,
-    onNavigate: (NavRoute) -> Unit = {}
+    onNavigate: (NavRoute) -> Unit = {},
+    onStartExam: (String) -> Unit = {}
 ) {
     val primaryDark = Color(0xFF1E2772) // Dark blue background for header
     
     // Mock data based on the design
     val assessments = listOf(
-        AssessmentItem("Monthly Assessment", "UI/UX Design", "Nov 25", "11:15 AM", 35, AssessmentStatus.Pending),
-        AssessmentItem("Final Project Defense", "Advanced Web Dev", "Nov 20", "02:30 PM", 1, AssessmentStatus.Pending),
-        AssessmentItem("Midterm Examination", "Computer Science 101", "Nov 15", "10:00 AM", 50, AssessmentStatus.Completed),
-        AssessmentItem("Quiz 4: Algorithms", "Data Structures", "Nov 10", "09:00 AM", 20, AssessmentStatus.Missed),
-        AssessmentItem("Calculus III Exam", "Mathematics", "Nov 5", "08:00 AM", 15, AssessmentStatus.Completed)
+        AssessmentItem("exam1", "Monthly Assessment", "UI/UX Design", "Nov 25", "11:15 AM", 35, AssessmentStatus.Pending),
+        AssessmentItem("exam2", "Final Project Defense", "Advanced Web Dev", "Nov 20", "02:30 PM", 1, AssessmentStatus.Pending),
+        AssessmentItem("exam3", "Midterm Examination", "Computer Science 101", "Nov 15", "10:00 AM", 50, AssessmentStatus.Completed),
+        AssessmentItem("exam4", "Quiz 4: Algorithms", "Data Structures", "Nov 10", "09:00 AM", 20, AssessmentStatus.Missed),
+        AssessmentItem("exam5", "Calculus III Exam", "Mathematics", "Nov 5", "08:00 AM", 15, AssessmentStatus.Completed)
     )
 
     Scaffold(
@@ -71,14 +72,14 @@ fun StudentScreen(
                     modifier = Modifier.padding(top = 48.dp, start = 24.dp, end = 24.dp, bottom = 28.dp)
                 ) {
                     Text(
-                        text = "Assessments",
+                        text = "Evaluaciones",
                         color = Color.White,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Manage and track your academic progress",
+                        text = "Maneja y controla tu progreso académico",
                         color = Color.White.copy(alpha = 0.8f),
                         fontSize = 14.sp
                     )
@@ -95,7 +96,7 @@ fun StudentScreen(
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Search by exam or course...") },
+                        placeholder = { Text("Buscar...") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -129,7 +130,7 @@ fun StudentScreen(
                         ) {
                             Icon(Icons.Outlined.SwapVert, contentDescription = "Sort", modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Sort by Date (Newest)", fontWeight = FontWeight.SemiBold)
+                            Text("Ordenar por fecha (Reciente)", fontWeight = FontWeight.SemiBold)
                         }
 
                         OutlinedButton(
@@ -156,14 +157,14 @@ fun StudentScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "UPCOMING & RECENT",
+                            text = "PENDIENTES Y PRÓXIMOS",
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp,
                             color = Color(0xFF757575),
                             letterSpacing = 1.sp
                         )
                         Text(
-                            text = "${assessments.size} Assessments",
+                            text = "${assessments.size} Evaluaciones",
                             fontSize = 12.sp,
                             color = Color(0xFFA0A0A0)
                         )
@@ -177,7 +178,10 @@ fun StudentScreen(
                         modifier = Modifier.fillMaxHeight()
                     ) {
                         items(assessments) { assessment ->
-                            AssessmentCard(assessment)
+                            AssessmentCard(
+                                item = assessment,
+                                onViewDetails = { onStartExam(assessment.id) }
+                            )
                         }
                     }
                 }
@@ -194,6 +198,7 @@ enum class AssessmentStatus {
 }
 
 data class AssessmentItem(
+    val id: String,
     val title: String,
     val course: String,
     val date: String,
@@ -203,7 +208,7 @@ data class AssessmentItem(
 )
 
 @Composable
-fun AssessmentCard(item: AssessmentItem) {
+fun AssessmentCard(item: AssessmentItem, onViewDetails: () -> Unit = {}) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -295,17 +300,17 @@ fun AssessmentCard(item: AssessmentItem) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${item.questionsCount} Questions",
+                    text = "${item.questionsCount} Preguntas",
                     fontSize = 13.sp,
                     color = Color(0xFF9E9E9E)
                 )
                 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { /* View Details */ }
+                    modifier = Modifier.clickable { onViewDetails() }
                 ) {
                     Text(
-                        text = "View Details",
+                        text = "Ver detalles",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1E2772)

@@ -38,7 +38,6 @@ import com.example.grader.firebase.FirestoreHelper
 import com.example.grader.models.QuizSubmission
 import com.example.grader.ui.components.GraderBottomNavigation
 import com.example.grader.ui.components.NavRoute
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
@@ -51,15 +50,41 @@ fun StatsView(
 ) {
     val primaryBlue = Color(0xFF0C5CBF)
     var results by remember { mutableStateOf<List<QuizSubmission>>(emptyList()) }
+    var chartData by remember { mutableStateOf<List<Pair<String, Float>>>(emptyList()) }
+    var trend by remember { mutableStateOf("+0.0%") }
+    var avgScoreLabel by remember { mutableStateOf("0%") }
+    var successRateLabel by remember { mutableStateOf("0%") }
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         try {
             val firestoreHelper = object : Any() {
                 suspend fun fetchSubmissions() = FirestoreHelper().getSubmissionsFromStudent(studentId)
+                suspend fun fetchAverages() = FirestoreHelper().getAverageScoresLast6Months(studentId)
             }
             val submissions = firestoreHelper.fetchSubmissions()
-            val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+            val averages = firestoreHelper.fetchAverages()
+            val dateFormatter = java.text.SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+
+            chartData = averages
+
+            val allAvg = if (submissions.isNotEmpty() && submissions.any { it.total > 0 }) {
+                submissions.filter { it.total > 0 }.map { it.score.toFloat() / it.total * 100 }.average().toFloat()
+            } else 0f
+            avgScoreLabel = String.format(Locale.US, "%.1f%%", allAvg)
+
+            val passes = submissions.count { it.total > 0 && it.score.toFloat() / it.total >= 0.6f }
+            val successRate = if (submissions.isNotEmpty()) (passes.toFloat() / submissions.size) * 100 else 0f
+            successRateLabel = String.format(Locale.US, "%.0f%%", successRate)
+
+            val nonZero = averages.filter { it.second > 0 }
+            if (nonZero.size >= 2) {
+                val current = nonZero.last().second
+                val prev = nonZero[nonZero.size - 2].second
+                val diff = current - prev
+                val sign = if (diff >= 0) "+" else ""
+                trend = String.format(Locale.US, "$sign%.1f%%", diff)
+            }
 
             results = submissions.map { submission ->
                 val dateObj = Date(submission.submittedAt)
@@ -173,26 +198,26 @@ fun StatsView(
                     item {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             StatCard(
                                 modifier = Modifier.weight(1f),
                                 icon = Icons.Outlined.TrendingUp,
-                                value = "A-",
+                                value = avgScoreLabel,
                                 label = "NOTA PROM.",
                                 iconColor = primaryBlue
                             )
                             StatCard(
                                 modifier = Modifier.weight(1f),
                                 icon = Icons.Outlined.MenuBook,
-                                value = "24",
+                                value = results.size.toString(),
                                 label = "EXAMENES",
                                 iconColor = Color(0xFF00ACC1)
                             )
                             StatCard(
                                 modifier = Modifier.weight(1f),
                                 icon = Icons.Outlined.CheckCircle,
-                                value = "98%",
+                                value = successRateLabel,
                                 label = "APROBACIÓN",
                                 iconColor = Color(0xFF333333)
                             )
@@ -235,7 +260,7 @@ fun StatsView(
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = "+4.2%",
+                                            text = trend,
                                             style = MaterialTheme.typography.labelMedium.copy(
                                                 fontWeight = FontWeight.Bold
                                             ),
@@ -246,9 +271,8 @@ fun StatsView(
 
                                 Spacer(modifier = Modifier.height(24.dp))
 
-                                // Simple Bar Chart Mockup
-                                val barData = listOf(82f, 88f, 85f, 92f, 89f, 94f)
-                                val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun")
+                                val barData = if (chartData.isNotEmpty()) chartData.map { it.second } else listOf(0f, 0f, 0f, 0f, 0f, 0f)
+                                val months = if (chartData.isNotEmpty()) chartData.map { it.first } else listOf("-", "-", "-", "-", "-", "-")
                                 val maxVal = 100f
 
                                 Row(
@@ -472,7 +496,7 @@ fun StatCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(

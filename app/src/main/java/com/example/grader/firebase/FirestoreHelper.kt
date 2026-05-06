@@ -12,6 +12,27 @@ import kotlinx.coroutines.tasks.await
  * Uses `kotlinx-coroutines-play-services` to convert Firebase `Task<>` to `suspend` functions,
  * ensuring structured concurrency and proper cancellation support.
  */
+/**
+ * Modelo auxiliar utilizado para mostrar la revisión de una respuesta
+ * realizada por un estudiante en una evaluación.
+ *
+ * Esta clase no se guarda directamente en Firestore. Se construye en memoria
+ * combinando los datos del resultado guardado en la colección "submissions"
+ * con las preguntas originales del examen almacenadas en "evaluations".
+ *
+ * @property questionNumber Número correlativo de la pregunta dentro del examen.
+ * @property questionText Enunciado de la pregunta.
+ * @property selectedAnswer Respuesta seleccionada por el estudiante.
+ * @property correctAnswer Respuesta correcta definida por el administrador.
+ * @property isCorrect Indica si la respuesta seleccionada coincide con la respuesta correcta.
+ */
+data class ReviewedAnswer(
+    val questionNumber: Int,
+    val questionText: String,
+    val selectedAnswer: String,
+    val correctAnswer: String,
+    val isCorrect: Boolean
+)
 class FirestoreHelper {
 
     private val db = FirebaseFirestore.getInstance()
@@ -136,4 +157,148 @@ class FirestoreHelper {
         batch.commit().await()
         return examId
     }
+    /**
+     * Obtiene todos los resultados enviados por un estudiante específico.
+     *
+     * Esta función se utiliza cuando el administrador selecciona un estudiante
+     * y desea revisar todos los exámenes que ese estudiante ha realizado.
+     *
+     * La búsqueda se realiza en la colección "submissions", filtrando por el campo
+     * "studentId", que debe corresponder al UID del usuario autenticado en Firebase.
+     *
+     * @param studentId UID del estudiante seleccionado.
+     * @return Lista de resultados enviados por el estudiante, ordenados del más reciente al más antiguo.
+     */
+    suspend fun getResultsByStudent(studentId: String): List<QuizSubmission> {
+        val snapshot = db.collection("submissions")
+            .whereEqualTo("studentId", studentId)
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            doc.toObject(QuizSubmission::class.java)?.also {
+                it.id = doc.id
+            }
+        }.sortedByDescending { it.submittedAt }
+    }
+
+    /**
+     * Obtiene todos los resultados asociados a un examen específico.
+     *
+     * Esta función permite que el administrador seleccione una evaluación
+     * y visualice qué estudiantes la han respondido.
+     *
+     * La búsqueda se realiza en la colección "submissions", filtrando por el campo
+     * "examId", que representa el identificador del examen creado por el administrador.
+     *
+     * @param examId ID del examen seleccionado.
+     * @return Lista de resultados enviados para ese examen, ordenados del más reciente al más antiguo.
+     */
+    suspend fun getResultsByExam(examId: String): List<QuizSubmission> {
+        val snapshot = db.collection("submissions")
+            .whereEqualTo("examId", examId)
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            doc.toObject(QuizSubmission::class.java)?.also {
+                it.id = doc.id
+            }
+        }.sortedByDescending { it.submittedAt }
+    }
+
+    /**
+     * Obtiene los resultados de un estudiante específico en un examen específico.
+     *
+     * Esta función se utiliza cuando el administrador desea revisar los intentos
+     * o resultados de un estudiante determinado en una evaluación concreta.
+     *
+     * Es útil si el sistema permite que el estudiante realice una evaluación
+     * más de una vez, ya que devuelve una lista de resultados y no un único registro.
+     *
+     * @param studentId UID del estudiante seleccionado.
+     * @param examId ID del examen seleccionado.
+     * @return Lista de resultados del estudiante en ese examen, ordenados del más reciente al más antiguo.
+     */
+    suspend fun getResultsByStudentAndExam(
+        studentId: String,
+        examId: String
+    ): List<QuizSubmission> {
+        val snapshot = db.collection("submissions")
+            .whereEqualTo("studentId", studentId)
+            .whereEqualTo("examId", examId)
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            doc.toObject(QuizSubmission::class.java)?.also {
+                it.id = doc.id
+            }
+        }.sortedByDescending { it.submittedAt }
+    }
+
+    /**
+     * Obtiene un resultado específico a partir del ID del documento en Firestore.
+     *
+     * Esta función se utiliza cuando el administrador selecciona un resultado
+     * específico para ver su detalle.
+     *
+     * @param submissionId ID del documento guardado en la colección "submissions".
+     * @return Objeto QuizSubmission correspondiente al resultado seleccionado.
+     * @throws IllegalStateException Si no se encuentra el resultado solicitado.
+     */
+    suspend fun getResultById(submissionId: String): QuizSubmission {
+        val doc = db.collection("submissions")
+            .document(submissionId)
+            .get()
+            .await()
+
+        val result = doc.toObject(QuizSubmission::class.java)
+            ?: throw IllegalStateException("No se encontró el resultado: $submissionId")
+
+        result.id = doc.id
+        return result
+    }
+
+    /**
+     * Obtiene la revisión detallada de las respuestas de un estudiante.
+     *
+     * Esta función combina:
+     * 1. El resultado guardado en la colección "submissions".
+     * 2. Las preguntas originales del examen almacenadas en "evaluations/{examId}/questions".
+     *
+     * Con esta información se construye una lista de respuestas revisadas,
+     * indicando para cada pregunta:
+     *
+     * - El enunciado.
+     * - La respuesta seleccionada por el estudiante.
+     * - La respuesta correcta.
+     * - Si la respuesta fue correcta o incorrecta.
+     *
+     * Esta función es la base para que el administrador pueda revisar el examen
+     * de cada alumno.
+     *
+     * @param submissionId ID del resultado guardado en la colección "submissions".
+     * @return Lista de respuestas revisadas del examen seleccionado.
+     */
+    suspend fun getReviewedAnswers(submissionId: String): List<ReviewedAnswer> {
+        val submission = getResultById(submissionId)
+
+        val questions = getQuestions(submission.examId)
+
+        return questions.mapIndexed { index, question ->
+            val selectedIndex = submission.answers[index.toString()] ?: -1
+            val correctIndex = question.correctAnswerIndex
+
+            ReviewedAnswer(
+                questionNumber = index + 1,
+                questionText = question.question,
+                selectedAnswer = question.options.getOrNull(selectedIndex) ?: "Sin responder",
+                correctAnswer = question.options.getOrNull(correctIndex) ?: "No definida",
+                isCorrect = selectedIndex == correctIndex
+            )
+        }
+    }
+
+
 }

@@ -1,11 +1,13 @@
 package com.example.grader.ui.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.grader.firebase.FirestoreAuth
 import com.example.grader.firebase.FirestoreHelper
 import com.example.grader.models.Exam
 import com.example.grader.models.Question
+import com.example.grader.models.Course
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -65,7 +67,9 @@ sealed class ExamCreatorUiState {
             EditableQuestion(id = 1)
         ),
         val isSaving: Boolean = false,
-        val validationErrors: Map<String, String> = emptyMap()
+        val validationErrors: Map<String, String> = emptyMap(),
+        val availableCourses: List<Course> = emptyList(),
+        val isLoadingCourses: Boolean = true
     ) : ExamCreatorUiState()
 
     /**
@@ -102,10 +106,37 @@ class ExamCreatorViewModel(
     val uiState: StateFlow<ExamCreatorUiState> = _uiState.asStateFlow()
 
     private var editingExamId: String? = null
+    private var cachedCourses: List<Course> = emptyList()
+    private var isCoursesLoaded: Boolean = false
+
+    init {
+        loadCourses()
+    }
+
+    private fun loadCourses() {
+        viewModelScope.launch {
+            try {
+                val courses = firestoreHelper.getCourses()
+                cachedCourses = courses
+                isCoursesLoaded = true
+                Log.e("ExamCreatorViewModel", "Loaded courses: $courses")
+                mutateEditing { copy(availableCourses = courses, isLoadingCourses = false) }
+            } catch (e: Exception) {
+                Log.e("ExamCreatorViewModel", "Error loading courses", e)
+                mutateEditing { copy(isLoadingCourses = false) }
+            }
+        }
+    }
 
     fun resetState() {
         editingExamId = null
-        _uiState.value = ExamCreatorUiState.Editing()
+        _uiState.value = ExamCreatorUiState.Editing(
+            availableCourses = cachedCourses,
+            isLoadingCourses = !isCoursesLoaded
+        )
+        if (!isCoursesLoaded) {
+            loadCourses()
+        }
     }
 
     fun loadExam(examId: String) {
@@ -129,7 +160,9 @@ class ExamCreatorViewModel(
                     title = exam.title,
                     category = exam.course,
                     durationMins = exam.durationMins.toString(),
-                    questions = editableQuestions.ifEmpty { listOf(EditableQuestion(id = 1)) }
+                    questions = editableQuestions.ifEmpty { listOf(EditableQuestion(id = 1)) },
+                    availableCourses = cachedCourses,
+                    isLoadingCourses = !isCoursesLoaded
                 )
             } catch (e: Exception) {
                 _uiState.value = ExamCreatorUiState.Error(
@@ -282,14 +315,14 @@ class ExamCreatorViewModel(
         viewModelScope.launch {
             try {
                 val exam = Exam(
-                    creatorId = firestoreAuth.currentUser?.uid ?: "",
                     title = current.title.trim(),
                     course = current.category.trim(),
                     questionCount = current.questions.size,
                     durationMins = duration ?: 0,
                     type = "multiple_choice",
-                    status = "draft",
-                    createdAt = System.currentTimeMillis()
+                    status = "active",
+                    createdAt = System.currentTimeMillis(),
+                    creatorId = firestoreAuth.currentUser?.uid ?: "unkown user"
                 )
 
                 val questions = current.questions.map { eq ->
@@ -321,7 +354,10 @@ class ExamCreatorViewModel(
      * Resets back to editing state after an error so the user can retry.
      */
     fun dismissError() {
-        _uiState.value = ExamCreatorUiState.Editing()
+        _uiState.value = ExamCreatorUiState.Editing(
+            availableCourses = cachedCourses,
+            isLoadingCourses = !isCoursesLoaded
+        )
     }
 
     // ── Private helpers ─────────────────────────────────────────────────

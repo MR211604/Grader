@@ -1,5 +1,7 @@
 package com.example.grader.firebase
 
+import android.util.Log
+import com.example.grader.models.Course
 import com.example.grader.models.Exam
 import com.example.grader.models.Question
 import com.example.grader.models.QuizSubmission
@@ -92,6 +94,20 @@ class FirestoreHelper {
         }
     }
 
+    /**
+     * Comprueba si un estudiante ya ha realizado un examen.
+     */
+    suspend fun hasStudentSubmittedExam(examId: String, studentId: String): Boolean {
+        val snapshot = db.collection("submissions")
+            .whereEqualTo("examId", examId)
+            .whereEqualTo("studentId", studentId)
+            .limit(1)
+            .get()
+            .await()
+
+        return !snapshot.isEmpty
+    }
+
     suspend fun publishExam(examId: String, newStatus: String) {
         db.collection("evaluations")
             .document(examId)
@@ -124,7 +140,8 @@ class FirestoreHelper {
             "durationMins" to exam.durationMins,
             "type" to exam.type,
             "status" to exam.status,
-            "createdAt" to exam.createdAt
+            "createdAt" to exam.createdAt,
+            "creatorId" to exam.creatorId
         )
         batch.set(examRef, examData)
 
@@ -169,6 +186,7 @@ class FirestoreHelper {
             "durationMins" to updatedExam.durationMins,
             "type" to updatedExam.type,
             "status" to updatedExam.status,
+            "creatorId" to updatedExam.creatorId
         )
         batch.set(examRef, examData)
 
@@ -228,6 +246,18 @@ class FirestoreHelper {
 
         return snapshot.documents.mapNotNull { doc ->
             doc.toObject(Exam::class.java)?.also { it.id = doc.id }
+        }
+    }
+
+    suspend fun getCourses(): List<Course> {
+        val snapshot = db.collection("courses")
+            .get()
+            .await()
+
+        Log.e("FirestoreHelper", "Fetched ${snapshot.size()} courses from Firestore")
+
+        return snapshot.documents.mapNotNull { doc ->
+            doc.toObject(Course::class.java)?.also { it.id = doc.id }
         }
     }
 }

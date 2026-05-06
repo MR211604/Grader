@@ -7,12 +7,12 @@ package com.example.grader.models
  */
 data class Exam(
     var id: String = "",
-    var creatorId: String = "",
     var title: String = "",
     var course: String = "",
     var questionCount: Int = 0,
     var durationMins: Int = 0,
     var type: String = "multiple_choice",
     var status: String = "draft",
-    var createdAt: Long = System.currentTimeMillis()
+    var createdAt: Long = System.currentTimeMillis(),
+    var creatorId: String = ""
 )

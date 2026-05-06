@@ -49,6 +49,8 @@ fun ExamCreatorScreen(
     val primaryBlue = Color(0xFF0C5CBF)
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var expanded by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(examId) {
         if (examId != null) {
@@ -270,17 +272,41 @@ fun ExamCreatorScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            OutlinedTextField(
-                                value = editingState.category,
-                                onValueChange = { viewModel.updateCategory(it) },
-                                placeholder = { Text("p.ej. Ciencias") },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                isError = editingState.validationErrors.containsKey("category"),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+
+                            ExposedDropdownMenuBox(
+                                expanded = expanded,
+                                onExpandedChange = { expanded = it }
+                            ) {
+                                OutlinedTextField(
+                                    value = editingState.category,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    placeholder = { Text(if (editingState.isLoadingCourses) "Cargando..." else "Selecciona una categoría") },
+                                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    isError = editingState.validationErrors.containsKey("category"),
+                                    trailingIcon = {
+                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                                    },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                                    )
                                 )
-                            )
+                                ExposedDropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false }
+                                ) {
+                                    editingState.availableCourses.forEach { course ->
+                                        DropdownMenuItem(
+                                            text = { Text(course.name) },
+                                            onClick = {
+                                                viewModel.updateCategory(course.name)
+                                                expanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
                         }
                         
                         Column(modifier = Modifier.weight(1f)) {

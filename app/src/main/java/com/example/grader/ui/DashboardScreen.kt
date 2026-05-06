@@ -178,7 +178,7 @@ fun DashboardScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "5", // You can change this to assessments.size.toString() if needed
+                        text = assessments.size.toString(), // You can change this to assessments.size.toString() if needed
                         color = primaryBlue,
                         fontWeight = FontWeight.Bold
                     )

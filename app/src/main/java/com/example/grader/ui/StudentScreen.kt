@@ -20,8 +20,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.grader.contants.BACKGROUND_COLOR
+import com.example.grader.firebase.FirestoreHelper
 import com.example.grader.ui.components.GraderBottomNavigation
 import com.example.grader.ui.components.NavRoute
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,14 +36,34 @@ fun StudentScreen(
 ) {
     val primaryDark = Color(0xFF1E2772) // Dark blue background for header
     
-    // Mock data based on the design
-    val assessments = listOf(
-        AssessmentItem("exam1", "Monthly Assessment", "UI/UX Design", "Nov 25", "11:15 AM", 35, AssessmentStatus.Pending),
-        AssessmentItem("exam2", "Final Project Defense", "Advanced Web Dev", "Nov 20", "02:30 PM", 1, AssessmentStatus.Pending),
-        AssessmentItem("exam3", "Midterm Examination", "Computer Science 101", "Nov 15", "10:00 AM", 50, AssessmentStatus.Completed),
-        AssessmentItem("exam4", "Quiz 4: Algorithms", "Data Structures", "Nov 10", "09:00 AM", 20, AssessmentStatus.Missed),
-        AssessmentItem("exam5", "Calculus III Exam", "Mathematics", "Nov 5", "08:00 AM", 15, AssessmentStatus.Completed)
-    )
+    var assessments by remember { mutableStateOf<List<AssessmentItem>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val firestoreHelper = FirestoreHelper()
+            val exams = firestoreHelper.getStudentExams()
+            val dateFormatter = SimpleDateFormat("MMM dd", Locale.getDefault())
+            val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
+            
+            assessments = exams.map { exam ->
+                val dateObj = Date(exam.createdAt)
+                AssessmentItem(
+                    id = exam.id,
+                    title = exam.title,
+                    course = exam.course,
+                    date = dateFormatter.format(dateObj),
+                    time = timeFormatter.format(dateObj),
+                    questionsCount = exam.questionCount,
+                    status = AssessmentStatus.Pending
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            isLoading = false
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -172,16 +196,22 @@ fun StudentScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // List
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxHeight()
-                    ) {
-                        items(assessments) { assessment ->
-                            AssessmentCard(
-                                item = assessment,
-                                onViewDetails = { onStartExam(assessment.id) }
-                            )
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    } else {
+                        // List
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxHeight()
+                        ) {
+                            items(assessments) { assessment ->
+                                AssessmentCard(
+                                    item = assessment,
+                                    onViewDetails = { onStartExam(assessment.id) }
+                                )
+                            }
                         }
                     }
                 }
@@ -274,7 +304,9 @@ fun AssessmentCard(item: AssessmentItem, onViewDetails: () -> Unit = {}) {
                         fontWeight = FontWeight.Medium
                     )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f).padding(start = 24.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 24.dp)) {
                     Icon(
                         Icons.Outlined.Schedule,
                         contentDescription = null,
@@ -360,7 +392,11 @@ fun StatusChip(status: AssessmentStatus) {
         modifier = Modifier
             .background(backgroundColor, RoundedCornerShape(16.dp))
             .run {
-                if (borderColor != null) border(1.dp, borderColor, RoundedCornerShape(16.dp)) else this
+                if (borderColor != null) border(
+                    1.dp,
+                    borderColor,
+                    RoundedCornerShape(16.dp)
+                ) else this
             }
             .padding(horizontal = 10.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically

@@ -34,7 +34,8 @@ fun UserProfileScreen(
     onNavigate: (NavRoute) -> Unit = {},
     onLogoutClick: () -> Unit = {},
     userName: String = "",
-    userEmail: String = ""
+    userEmail: String = "",
+    isAdmin: Boolean = false
 ) {
     Scaffold(
         topBar = {
@@ -50,7 +51,7 @@ fun UserProfileScreen(
                 },
                 title = {
                     Text(
-                        "Perfil del Estudiante",
+                        "Perfil",
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -62,7 +63,8 @@ fun UserProfileScreen(
         bottomBar = {
             GraderBottomNavigation(
                 currentRoute = currentRoute,
-                onNavigate = onNavigate
+                onNavigate = onNavigate,
+                isAdmin = isAdmin
             )
         },
     ) { paddingValues ->
@@ -80,11 +82,13 @@ fun UserProfileScreen(
             ) {
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
-                    ProfileHeader(userEmail, userName)
+                    ProfileHeader(userEmail, userName, isAdmin)
                     Spacer(modifier = Modifier.height(24.dp))
                     HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
                     Spacer(modifier = Modifier.height(24.dp))
-                    CoursesSection()
+
+                    if (!isAdmin) CoursesSection()
+
                     Spacer(modifier = Modifier.height(32.dp))
                     LogoutButton(onLogoutClick = onLogoutClick)
                     Spacer(modifier = Modifier.height(32.dp))
@@ -98,7 +102,8 @@ fun UserProfileScreen(
 @Composable
 fun ProfileHeader(
     userEmail: String = "",
-    userName: String = ""
+    userName: String = "",
+    isAdmin: Boolean = false
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -149,21 +154,23 @@ fun ProfileHeader(
         )
         
         Spacer(modifier = Modifier.height(24.dp))
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            InfoCard(
-                modifier = Modifier.weight(1f),
-                label = "ID DE ESTUDIANTE",
-                value = "STU-882910"
-            )
-            InfoCard(
-                modifier = Modifier.weight(1f),
-                label = "MATRÍCULA",
-                value = "2026"
-            )
+
+        if (!isAdmin) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                InfoCard(
+                    modifier = Modifier.weight(1f),
+                    label = "ID DE ESTUDIANTE",
+                    value = "STU-882910"
+                )
+                InfoCard(
+                    modifier = Modifier.weight(1f),
+                    label = "MATRÍCULA",
+                    value = "2026"
+                )
+            }
         }
     }
 }

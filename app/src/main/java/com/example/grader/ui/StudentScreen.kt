@@ -30,6 +30,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentScreen(
+    studentId: String = "",
     currentRoute: NavRoute = NavRoute.EXAMS,
     onNavigate: (NavRoute) -> Unit = {},
     onStartExam: (String) -> Unit = {}
@@ -48,6 +49,9 @@ fun StudentScreen(
             
             assessments = exams.map { exam ->
                 val dateObj = Date(exam.createdAt)
+                val isCompleted = if (studentId.isNotEmpty()) {
+                    firestoreHelper.hasStudentSubmittedExam(exam.id, studentId)
+                } else false
                 AssessmentItem(
                     id = exam.id,
                     title = exam.title,
@@ -55,7 +59,7 @@ fun StudentScreen(
                     date = dateFormatter.format(dateObj),
                     time = timeFormatter.format(dateObj),
                     questionsCount = exam.questionCount,
-                    status = AssessmentStatus.Pending
+                    status = if (isCompleted) AssessmentStatus.Completed else AssessmentStatus.Pending
                 )
             }
         } catch (e: Exception) {
@@ -336,25 +340,25 @@ fun AssessmentCard(item: AssessmentItem, onViewDetails: () -> Unit = {}) {
                     fontSize = 13.sp,
                     color = Color(0xFF9E9E9E)
                 )
-                
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { onViewDetails() }
-                ) {
-                    Text(
-                        text = "Ver detalles",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E2772)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        Icons.Outlined.ChevronRight,
-                        contentDescription = "View Details",
-                        modifier = Modifier.size(16.dp),
-                        tint = Color(0xFF1E2772)
-                    )
-                }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { onViewDetails() }
+                    ) {
+                        Text(
+                            text = "Realizar examen",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E2772)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            Icons.Outlined.ChevronRight,
+                            contentDescription = "View Details",
+                            modifier = Modifier.size(16.dp),
+                            tint = Color(0xFF1E2772)
+                        )
+                    }
             }
         }
     }

@@ -492,7 +492,7 @@ private fun QuizResultScreen(
                 },
                 title = {
                     Text(
-                        "Quiz Results",
+                        "Resultados de examen",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )

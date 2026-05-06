@@ -41,15 +41,22 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExamCreatorScreen(
-    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
+    examId: String? = null,
+    onNavigateBack: () -> Unit,
     viewModel: ExamCreatorViewModel = viewModel()
 ) {
-    var currentRoute by remember { mutableStateOf(NavRoute.EXAMS) }
     val primaryBlue = Color(0xFF0C5CBF)
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(examId) {
+        if (examId != null) {
+            viewModel.loadExam(examId)
+        } else {
+            viewModel.resetState()
+        }
+    }
 
     // Handle saved / error states
     LaunchedEffect(uiState) {
@@ -71,7 +78,7 @@ fun ExamCreatorScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Crear Nueva Evaluación",
+                        text = if (examId == null) "Crear nuevo examen" else "Editar examen",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = Color.Black
                     )
@@ -98,8 +105,9 @@ fun ExamCreatorScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             GraderBottomNavigation(
-                currentRoute = currentRoute,
-                onNavigate = { currentRoute = it }
+                currentRoute = NavRoute.EXAMS,
+                onNavigate = {},
+                isAdmin = true
             )
         }
     ) { innerPadding ->

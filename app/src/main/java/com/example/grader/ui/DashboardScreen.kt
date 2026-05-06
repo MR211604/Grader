@@ -2,6 +2,7 @@ package com.example.grader.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,7 +13,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Info
@@ -27,10 +27,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.grader.firebase.FirestoreHelper
 import com.example.grader.ui.components.GraderBottomNavigation
 import com.example.grader.ui.components.NavRoute
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class Assessment(
+    val id: String = "mock_id",
     val title: String,
     val department: String,
     val status: String,
@@ -39,22 +44,46 @@ data class Assessment(
     val modifiedDate: String
 )
 
-val sampleAssessments = listOf(
-    Assessment("Midterm Assessment: Calculus I", "Mathematics Dept.", "active", 25, 90, "OCT 24, 2023"),
-    Assessment("Cell Biology Quiz #4", "Biological Sciences", "draft", 15, 30, "OCT 26, 2023"),
-    Assessment("Final Exam: Macroeconomics", "Economics & Finance", "active", 50, 180, "OCT 20, 2023"),
-    Assessment("Introduction to Psychology", "Social Sciences", "completed", 30, 60, "OCT 15, 2023"),
-    Assessment("Thermodynamics Problem Set", "Mechanical Engineering", "draft", 10, 45, "OCT 28, 2023")
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     currentRoute: NavRoute = NavRoute.EXAMS,
     onNavigate: (NavRoute) -> Unit = {},
-    onNavigateToCreateExam: () -> Unit = {}
+    onNavigateToCreateExam: () -> Unit = {},
+    onEditExam: (String) -> Unit = {},
+    teacherId: String = "default_teacher_id" // Ideally passed from Auth
 ) {
     val primaryBlue = Color(0xFF0C5CBF)
+
+    var assessments by remember { mutableStateOf<List<Assessment>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val firestoreHelper = object : Any() {
+                suspend fun fetchExams() = FirestoreHelper().getExamsByTeacher(teacherId)
+            }
+            val exams = firestoreHelper.fetchExams()
+            val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+            
+            assessments = exams.map { exam ->
+                val dateObj = Date(exam.createdAt)
+                Assessment(
+                    id = exam.id,
+                    title = exam.title,
+                    department = exam.course,
+                    status = exam.status,
+                    questions = exam.questionCount,
+                    durationMins = exam.durationMins,
+                    modifiedDate = dateFormatter.format(dateObj).uppercase()
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            isLoading = false
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -109,7 +138,8 @@ fun DashboardScreen(
         bottomBar = {
             GraderBottomNavigation(
                 currentRoute = currentRoute,
-                onNavigate = onNavigate
+                onNavigate = onNavigate,
+                isAdmin = true
             )
         }
     ) { innerPadding ->
@@ -148,23 +178,33 @@ fun DashboardScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "5",
+                        text = "5", // You can change this to assessments.size.toString() if needed
                         color = primaryBlue,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            // List of Assessments
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(sampleAssessments) { assessment ->
-                    AssessmentCard(assessment = assessment, primaryBlue = primaryBlue)
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
-                item {
-                    Spacer(modifier = Modifier.height(80.dp)) // Extra space for FAB
+            } else {
+                // List of Assessments
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(assessments) { assessment ->
+                        AssessmentCard(
+                            assessment = assessment,
+                            primaryBlue = primaryBlue,
+                            onEditExam = onEditExam
+                        )
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(80.dp)) // Extra space for FAB
+                    }
                 }
             }
         }
@@ -172,12 +212,16 @@ fun DashboardScreen(
 }
 
 @Composable
-fun AssessmentCard(assessment: Assessment, primaryBlue: Color) {
+fun AssessmentCard(
+    assessment: Assessment,
+    primaryBlue: Color,
+    onEditExam: (String) -> Unit = {}
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, primaryBlue.copy(alpha = 0.4f))
+        border = BorderStroke(1.dp, primaryBlue.copy(alpha = 0.4f)),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Title & Badge
@@ -272,13 +316,7 @@ fun AssessmentCard(assessment: Assessment, primaryBlue: Color) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                
-                Icon(
-                    imageVector = Icons.Outlined.Edit,
-                    contentDescription = "Edit",
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -287,7 +325,10 @@ fun AssessmentCard(assessment: Assessment, primaryBlue: Color) {
 
             // Footer Row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().height(32.dp).clickable(
+                    enabled = true,
+                    onClick = { onEditExam(assessment.id) },
+                ),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -310,7 +351,7 @@ fun AssessmentCard(assessment: Assessment, primaryBlue: Color) {
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

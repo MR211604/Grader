@@ -2,6 +2,7 @@ package com.example.grader.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.grader.firebase.FirestoreAuth
 import com.example.grader.firebase.FirestoreHelper
 import com.example.grader.models.QuizSubmission
 import com.example.grader.models.QuizUiState
@@ -20,12 +21,12 @@ import kotlinx.coroutines.launch
  * via [viewModelScope] for proper cancellation on teardown.
  */
 class QuizViewModel(
-    private val firestoreHelper: FirestoreHelper = FirestoreHelper()
+    private val firestoreHelper: FirestoreHelper = FirestoreHelper(),
+    private val fireStoreAuth: FirestoreAuth = FirestoreAuth()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<QuizUiState>(QuizUiState.Loading)
     val uiState: StateFlow<QuizUiState> = _uiState.asStateFlow()
-
     private var timerJob: Job? = null
     private var totalDurationSeconds: Int = 0
 
@@ -56,7 +57,6 @@ class QuizViewModel(
                     remainingSeconds = if (totalDurationSeconds > 0) totalDurationSeconds else -1
                 )
 
-                // Start countdown timer if duration is configured
                 if (totalDurationSeconds > 0) {
                     startTimer()
                 }
@@ -139,7 +139,7 @@ class QuizViewModel(
             try {
                 val submission = QuizSubmission(
                     examId = current.exam.id,
-                    studentId = "current_student", // TODO: Replace with actual auth user ID
+                    studentId = fireStoreAuth.currentUser?.uid ?: "",
                     score = score,
                     total = current.totalQuestions,
                     answers = current.selectedAnswers.mapKeys { it.key.toString() },
@@ -188,7 +188,6 @@ class QuizViewModel(
     }
 
     override fun onCleared() {
-        super.onCleared()
         timerJob?.cancel()
     }
 }

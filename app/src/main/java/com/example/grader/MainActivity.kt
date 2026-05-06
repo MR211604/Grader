@@ -99,11 +99,15 @@ class MainActivity : ComponentActivity() {
                 entry<NavKey.Exams> { _ ->
                     if (isAdmin) {
                         DashboardScreen(
+                            teacherId = firestoreAuth.currentUser?.uid ?: "",
                             currentRoute = NavRoute.EXAMS,
                             onNavigate = { route -> navigateToTab(route) },
                             onNavigateToCreateExam = {
-                                backStack.add(NavKey.ExamCreator)
-                            }
+                                backStack.add(NavKey.ExamCreator())
+                            },
+                            onEditExam = { examId ->
+                                backStack.add(NavKey.ExamCreator(examId = examId))
+                            },
                         )
                     } else {
                         StudentScreen(
@@ -117,8 +121,9 @@ class MainActivity : ComponentActivity() {
                 }
 
                 // ── ExamCreatorScreen (Admin route) ──────────────────────────────
-                entry<NavKey.ExamCreator> { _ ->
+                entry<NavKey.ExamCreator> { key ->
                     ExamCreatorScreen(
+                        examId = key.examId,
                         onNavigateBack = {
                             navigateToTab(NavRoute.EXAMS)
                         }
@@ -159,7 +164,8 @@ class MainActivity : ComponentActivity() {
                             ?.joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
                             ?: firestoreAuth.currentUser?.displayName.toString(),
                         currentRoute = NavRoute.PROFILE,
-                        onNavigate = { route -> navigateToTab(route) }
+                        onNavigate = { route -> navigateToTab(route) },
+                        isAdmin = isAdmin
                     )
                 }
             }

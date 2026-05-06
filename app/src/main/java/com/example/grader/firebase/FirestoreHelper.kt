@@ -92,6 +92,13 @@ class FirestoreHelper {
         }
     }
 
+    suspend fun publishExam(examId: String, newStatus: String) {
+        db.collection("evaluations")
+            .document(examId)
+            .update("status", "active")
+            .await()
+    }
+
     /**
      * Creates a new exam with its questions in Firestore atomically.
      *
@@ -135,5 +142,92 @@ class FirestoreHelper {
 
         batch.commit().await()
         return examId
+    }
+
+
+    /**
+     * Updates the exam in Firestore atomically.
+     *
+     * Uses a [WriteBatch] to ensure the exam document and all its questions
+     * are written together. If any write fails, the entire batch is rolled back.
+     *
+     * @param examId The ID of the exam to update.
+     * @param updatedExam The updated [Exam] data (id field is ignored).
+     * @param updatedQuestions The list of [Question] objects for this exam.
+     * @return The generated Firestore document ID for the new exam.
+     */
+    suspend fun updateExam(examId: String, updatedExam: Exam, updatedQuestions: List<Question>) {
+        val examRef = db.collection("evaluations").document(examId)
+
+        val batch = db.batch()
+
+        // Update exam data
+        val examData = hashMapOf(
+            "title" to updatedExam.title,
+            "course" to updatedExam.course,
+            "questionCount" to updatedQuestions.size,
+            "durationMins" to updatedExam.durationMins,
+            "type" to updatedExam.type,
+            "status" to updatedExam.status,
+        )
+        batch.set(examRef, examData)
+
+        // Delete existing questions
+        val existingQuestionsSnapshot = examRef.collection("questions").get().await()
+        existingQuestionsSnapshot.documents.forEach { doc ->
+            batch.delete(doc.reference)
+        }
+
+        // Add updated questions
+        updatedQuestions.forEach { question ->
+            val questionRef = examRef.collection("questions").document()
+            val questionData = hashMapOf(
+                "question" to question.question,
+                "options" to question.options,
+                "correctAnswerIndex" to question.correctAnswerIndex,
+                "type" to question.type
+            )
+            batch.set(questionRef, questionData)
+        }
+
+        batch.commit().await()
+    }
+
+    /**
+     * Fetches all exams created by a specific teacher.
+     *
+     * Useful for teachers to see a list of their exams and
+     * manage them (e.g., edit, delete, view results).
+     *
+     * @param teacherId The teacher ID to filter by.
+     * @return List of [Exam] objects sorted by creation time.
+     */
+    suspend fun getExamsByTeacher(teacherId: String): List<Exam> {
+        val snapshot = db.collection("evaluations")
+            .whereEqualTo("creatorId", teacherId)
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            doc.toObject(Exam::class.java)?.also { it.id = doc.id }
+        }
+    }
+
+    /**
+     * Fetches all active/published students exams.
+     *
+     * Useful for students to see a list of their exams
+     *
+     * @return List of [Exam] objects sorted by creation time.
+     */
+    suspend fun getStudentExams(): List<Exam> {
+        val snapshot = db.collection("evaluations")
+            .whereEqualTo("status", "active")
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            doc.toObject(Exam::class.java)?.also { it.id = doc.id }
+        }
     }
 }

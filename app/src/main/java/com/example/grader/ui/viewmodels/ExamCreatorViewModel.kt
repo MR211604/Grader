@@ -2,6 +2,7 @@ package com.example.grader.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.grader.firebase.FirestoreAuth
 import com.example.grader.firebase.FirestoreHelper
 import com.example.grader.models.Exam
 import com.example.grader.models.Question
@@ -91,13 +92,52 @@ sealed class ExamCreatorUiState {
  * All mutations go through dedicated action methods to keep the screen stateless.
  */
 class ExamCreatorViewModel(
-    private val firestoreHelper: FirestoreHelper = FirestoreHelper()
+    private val firestoreHelper: FirestoreHelper = FirestoreHelper(),
+    private val firestoreAuth: FirestoreAuth = FirestoreAuth()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ExamCreatorUiState>(
         ExamCreatorUiState.Editing()
     )
     val uiState: StateFlow<ExamCreatorUiState> = _uiState.asStateFlow()
+
+    private var editingExamId: String? = null
+
+    fun resetState() {
+        editingExamId = null
+        _uiState.value = ExamCreatorUiState.Editing()
+    }
+
+    fun loadExam(examId: String) {
+        editingExamId = examId
+        viewModelScope.launch {
+            try {
+                val exam = firestoreHelper.getExam(examId)
+                val firestoreQuestions = firestoreHelper.getQuestions(examId)
+
+                val editableQuestions = firestoreQuestions.mapIndexed { i, q ->
+                    EditableQuestion(
+                        id = i + 1,
+                        prompt = q.question,
+                        options = q.options.mapIndexed { index, text ->
+                            EditableOption(text = text, isCorrect = index == q.correctAnswerIndex)
+                        }
+                    )
+                }
+
+                _uiState.value = ExamCreatorUiState.Editing(
+                    title = exam.title,
+                    category = exam.course,
+                    durationMins = exam.durationMins.toString(),
+                    questions = editableQuestions.ifEmpty { listOf(EditableQuestion(id = 1)) }
+                )
+            } catch (e: Exception) {
+                _uiState.value = ExamCreatorUiState.Error(
+                    e.message ?: "Error al cargar el examen"
+                )
+            }
+        }
+    }
 
     // ── Field-level update actions ──────────────────────────────────────
 
@@ -242,6 +282,7 @@ class ExamCreatorViewModel(
         viewModelScope.launch {
             try {
                 val exam = Exam(
+                    creatorId = firestoreAuth.currentUser?.uid ?: "",
                     title = current.title.trim(),
                     course = current.category.trim(),
                     questionCount = current.questions.size,
@@ -261,8 +302,13 @@ class ExamCreatorViewModel(
                     )
                 }
 
-                val examId = firestoreHelper.createExam(exam, questions)
-                _uiState.value = ExamCreatorUiState.Saved(examId)
+                if (editingExamId != null) {
+                    firestoreHelper.updateExam(editingExamId!!, exam, questions)
+                    _uiState.value = ExamCreatorUiState.Saved(editingExamId!!)
+                } else {
+                    val examId = firestoreHelper.createExam(exam, questions)
+                    _uiState.value = ExamCreatorUiState.Saved(examId)
+                }
             } catch (e: Exception) {
                 _uiState.value = ExamCreatorUiState.Error(
                     e.message ?: "Error desconocido al guardar el examen"

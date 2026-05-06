@@ -66,7 +66,6 @@ class MainActivity : ComponentActivity() {
         firestoreAuth: FirestoreAuth,
         onLogout: () -> Unit
     ) {
-        val coroutineScope = rememberCoroutineScope()
         val isAdmin = firestoreAuth.currentUser?.email == "administrador@gmail.com"
         val startKey: NavKey = NavKey.Exams
         val backStack: SnapshotStateList<NavKey> = remember {
@@ -148,8 +147,9 @@ class MainActivity : ComponentActivity() {
                 // ── Stats tab ────────────────────────────────────────────────
                 entry<NavKey.Stats> { _ ->
                     StatsView(
+                        studentId = firestoreAuth.currentUser?.uid ?: "",
                         currentRoute = NavRoute.STATS,
-                        onNavigate = { route -> navigateToTab(route) }
+                        onNavigate = { route -> navigateToTab(route) },
                     )
                 }
 

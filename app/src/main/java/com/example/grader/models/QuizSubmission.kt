@@ -11,11 +11,14 @@ package com.example.grader.models
 data class QuizSubmission(
     var id: String = "",
     var examId: String = "",
+    var examTitle: String = "",
+    var course: String = "",
     var studentId: String = "",
     var score: Int = 0,
     var total: Int = 0,
     var answers: Map<String, Int> = emptyMap(),
     var timeSpentSeconds: Int = 0,
-    var submittedAt: Long = System.currentTimeMillis()
+    var submittedAt: Long = System.currentTimeMillis(),
+    var modifiedDate: String = ""
 )
 

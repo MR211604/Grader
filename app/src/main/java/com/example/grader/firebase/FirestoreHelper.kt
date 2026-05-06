@@ -87,7 +87,7 @@ class FirestoreHelper {
     }
 
     /**
-     * Fetches all submissions for a specific student and exam.
+     * Fetches all submissions for a specific student.
      *
      * Useful for checking if a student has already taken an exam
      * or for displaying past results.
@@ -96,15 +96,26 @@ class FirestoreHelper {
      * @param studentId The student ID to filter by.
      * @return List of [QuizSubmission] objects sorted by submission time.
      */
-    suspend fun getSubmissions(studentId: String): List<QuizSubmission> {
-        val snapshot = db.collection("submissions")
+    suspend fun getSubmissionsFromStudent(studentId: String): List<QuizSubmission> {
+        val submissionsSnapshot = db.collection("submissions")
             .whereEqualTo("studentId", studentId)
             .get()
             .await()
 
-        return snapshot.documents.mapNotNull { doc ->
+        val submissions = submissionsSnapshot.documents.mapNotNull { doc ->
             doc.toObject(QuizSubmission::class.java)?.also { it.id = doc.id }
         }
+
+        for (submission in submissions) {
+            val examDoc = db.collection("evaluations")
+                .document(submission.examId)
+                .get()
+                .await()
+            submission.course = examDoc.getString("course") ?: "Curso desconocido"
+            submission.examTitle = examDoc.getString("title") ?: "Examen sin título"
+        }
+
+        return submissions
     }
 
     /**

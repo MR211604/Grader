@@ -60,16 +60,30 @@ class FirestoreHelper {
      *
      * Persists the student's answers, score, and time spent so the student
      * can later see which questions were correct and which were incorrect.
+     * If a submission already exists for the given exam and student, it deletes it first.
      *
      * @param submission The [QuizSubmission] to persist.
      * @return The generated document ID.
      */
     suspend fun submitQuizResult(submission: QuizSubmission): String {
-        val docRef = db.collection("submissions")
-            .add(submission)
+        val existingSubmissions = db.collection("submissions")
+            .whereEqualTo("examId", submission.examId)
+            .whereEqualTo("studentId", submission.studentId)
+            .get()
             .await()
 
-        return docRef.id
+        val batch = db.batch()
+
+        for (doc in existingSubmissions.documents) {
+            batch.delete(doc.reference)
+        }
+
+        val newDocRef = db.collection("submissions").document()
+        batch.set(newDocRef, submission)
+
+        batch.commit().await()
+
+        return newDocRef.id
     }
 
     /**
@@ -82,9 +96,8 @@ class FirestoreHelper {
      * @param studentId The student ID to filter by.
      * @return List of [QuizSubmission] objects sorted by submission time.
      */
-    suspend fun getSubmissions(examId: String, studentId: String): List<QuizSubmission> {
+    suspend fun getSubmissions(studentId: String): List<QuizSubmission> {
         val snapshot = db.collection("submissions")
-            .whereEqualTo("examId", examId)
             .whereEqualTo("studentId", studentId)
             .get()
             .await()
@@ -106,13 +119,6 @@ class FirestoreHelper {
             .await()
 
         return !snapshot.isEmpty
-    }
-
-    suspend fun publishExam(examId: String, newStatus: String) {
-        db.collection("evaluations")
-            .document(examId)
-            .update("status", "active")
-            .await()
     }
 
     /**

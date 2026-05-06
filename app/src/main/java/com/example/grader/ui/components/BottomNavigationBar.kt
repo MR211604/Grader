@@ -31,9 +31,15 @@ enum class NavRoute(val title: String, val icon: ImageVector) {
 fun GraderBottomNavigation(
     currentRoute: NavRoute,
     onNavigate: (NavRoute) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isAdmin: Boolean = false
 ) {
     val primaryBlue = Color(0xFF0C5CBF)
+    val routes = if (isAdmin) {
+        NavRoute.entries.filter { it != NavRoute.STATS }
+    } else {
+        NavRoute.entries
+    }
 
     Column(modifier = modifier) {
         HorizontalDivider(color = DIVIDER_COLOR, thickness = 1.dp)
@@ -42,7 +48,7 @@ fun GraderBottomNavigation(
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             tonalElevation = 8.dp
         ) {
-            NavRoute.entries.forEach { route ->
+            routes.forEach { route ->
                 val isSelected = currentRoute == route
                 NavigationBarItem(
                     selected = isSelected,

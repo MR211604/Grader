@@ -30,7 +30,7 @@ sealed interface NavKey {
 
     // ─── Sub-destinations pushed on top of a tab ─────────────────────────────
     @Serializable
-    data object ExamCreator : NavKey
+    data class ExamCreator(val examId: String? = null) : NavKey
 
     @Serializable
     data class Quiz(val examId: String) : NavKey

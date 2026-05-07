@@ -41,144 +41,6 @@ class FirestoreHelper {
     }
 
     /**
-     * Fetches all questions for a given exam from its sub-collection.
-     *
-     * @param examId The parent exam document ID.
-     * @return List of [Question] objects with their IDs populated.
-     */
-    suspend fun getQuestions(examId: String): List<Question> {
-        val snapshot = db.collection("evaluations")
-            .document(examId)
-            .collection("questions")
-            .get()
-            .await()
-
-        return snapshot.documents.mapNotNull { doc ->
-            doc.toObject(Question::class.java)?.also { it.id = doc.id }
-        }
-    }
-
-    /**
-     * Submits a quiz result to Firestore for later review by the student.
-     *
-     * Persists the student's answers, score, and time spent so the student
-     * can later see which questions were correct and which were incorrect.
-     * If a submission already exists for the given exam and student, it deletes it first.
-     *
-     * @param submission The [QuizSubmission] to persist.
-     * @return The generated document ID.
-     */
-    suspend fun submitQuizResult(submission: QuizSubmission): String {
-        val existingSubmissions = db.collection("submissions")
-            .whereEqualTo("examId", submission.examId)
-            .whereEqualTo("studentId", submission.studentId)
-            .get()
-            .await()
-
-        val batch = db.batch()
-
-        for (doc in existingSubmissions.documents) {
-            batch.delete(doc.reference)
-        }
-
-        val newDocRef = db.collection("submissions").document()
-        batch.set(newDocRef, submission)
-
-        batch.commit().await()
-
-        return newDocRef.id
-    }
-
-    /**
-     * Fetches all submissions for a specific student.
-     *
-     * Useful for checking if a student has already taken an exam
-     * or for displaying past results.
-     *
-     * @param studentId The student ID to filter by.
-     * @return List of [QuizSubmission] objects sorted by submission time.
-     */
-    suspend fun getSubmissionsFromStudent(studentId: String): List<QuizSubmission> {
-        val submissionsSnapshot = db.collection("submissions")
-            .whereEqualTo("studentId", studentId)
-            .get()
-            .await()
-
-        val submissions = submissionsSnapshot.documents.mapNotNull { doc ->
-            doc.toObject(QuizSubmission::class.java)?.also { it.id = doc.id }
-        }
-
-        for (submission in submissions) {
-            val examDoc = db.collection("evaluations")
-                .document(submission.examId)
-                .get()
-                .await()
-            submission.course = examDoc.getString("course") ?: "Curso desconocido"
-            submission.examTitle = examDoc.getString("title") ?: "Examen sin título"
-        }
-
-        return submissions
-    }
-
-    /**
-     * Obtiene el promedio de notas de los últimos 6 meses del estudiante.
-     * Retorna una lista de pares (Mes, Promedio en porcentaje).
-     */
-    suspend fun getAverageScoresLast6Months(studentId: String): List<Pair<String, Float>> {
-        val submissionsSnapshot = db.collection("submissions")
-            .whereEqualTo("studentId", studentId)
-            .get()
-            .await()
-
-        val submissions = submissionsSnapshot.documents.mapNotNull { doc ->
-            doc.toObject(QuizSubmission::class.java)
-        }
-
-        val dateFormat = SimpleDateFormat("MMM", Locale.getDefault())
-        val monthLabels = mutableListOf<String>()
-        val monthYearPairs = mutableListOf<Pair<Int, Int>>()
-        
-        for (i in 5 downTo 0) {
-            val cal = Calendar.getInstance()
-            cal.add(Calendar.MONTH, -i)
-            monthLabels.add(dateFormat.format(cal.time))
-            monthYearPairs.add(Pair(cal.get(Calendar.MONTH), cal.get(Calendar.YEAR)))
-        }
-
-        val result = mutableListOf<Pair<String, Float>>()
-        for (i in 0..5) {
-            val (month, year) = monthYearPairs[i]
-            val monthSubmissions = submissions.filter { sub ->
-                val cal = Calendar.getInstance()
-                cal.timeInMillis = sub.submittedAt
-                cal.get(Calendar.MONTH) == month && cal.get(Calendar.YEAR) == year
-            }
-            if (monthSubmissions.isEmpty()) {
-                result.add(Pair(monthLabels[i], 0f))
-            } else {
-                val filtered = monthSubmissions.filter { it.total > 0 }
-                val avg = if (filtered.isEmpty()) 0f else filtered.map { it.score.toFloat() / it.total.toFloat() * 100f }.average().toFloat()
-                result.add(Pair(monthLabels[i], avg))
-            }
-        }
-        return result
-    }
-
-    /**
-     * Comprueba si un estudiante ya ha realizado un examen.
-     */
-    suspend fun hasStudentSubmittedExam(examId: String, studentId: String): Boolean {
-        val snapshot = db.collection("submissions")
-            .whereEqualTo("examId", examId)
-            .whereEqualTo("studentId", studentId)
-            .limit(1)
-            .get()
-            .await()
-
-        return !snapshot.isEmpty
-    }
-
-    /**
      * Creates a new exam with its questions in Firestore atomically.
      *
      * Uses a [Batch] to ensure the exam document and all its questions
@@ -309,6 +171,144 @@ class FirestoreHelper {
         return snapshot.documents.mapNotNull { doc ->
             doc.toObject(Exam::class.java)?.also { it.id = doc.id }
         }
+    }
+
+    /**
+     * Fetches all questions for a given exam from its sub-collection.
+     *
+     * @param examId The parent exam document ID.
+     * @return List of [Question] objects with their IDs populated.
+     */
+    suspend fun getQuestions(examId: String): List<Question> {
+        val snapshot = db.collection("evaluations")
+            .document(examId)
+            .collection("questions")
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            doc.toObject(Question::class.java)?.also { it.id = doc.id }
+        }
+    }
+
+    /**
+     * Submits a quiz result to Firestore for later review by the student.
+     *
+     * Persists the student's answers, score, and time spent so the student
+     * can later see which questions were correct and which were incorrect.
+     * If a submission already exists for the given exam and student, it deletes it first.
+     *
+     * @param submission The [QuizSubmission] to persist.
+     * @return The generated document ID.
+     */
+    suspend fun submitQuizResult(submission: QuizSubmission): String {
+        val existingSubmissions = db.collection("submissions")
+            .whereEqualTo("examId", submission.examId)
+            .whereEqualTo("studentId", submission.studentId)
+            .get()
+            .await()
+
+        val batch = db.batch()
+
+        for (doc in existingSubmissions.documents) {
+            batch.delete(doc.reference)
+        }
+
+        val newDocRef = db.collection("submissions").document()
+        batch.set(newDocRef, submission)
+
+        batch.commit().await()
+
+        return newDocRef.id
+    }
+
+    /**
+     * Comprueba si un estudiante ya ha realizado un examen.
+     */
+    suspend fun hasStudentSubmittedExam(examId: String, studentId: String): Boolean {
+        val snapshot = db.collection("submissions")
+            .whereEqualTo("examId", examId)
+            .whereEqualTo("studentId", studentId)
+            .limit(1)
+            .get()
+            .await()
+
+        return !snapshot.isEmpty
+    }
+
+    /**
+     * Fetches all submissions for a specific student.
+     *
+     * Useful for checking if a student has already taken an exam
+     * or for displaying past results.
+     *
+     * @param studentId The student ID to filter by.
+     * @return List of [QuizSubmission] objects sorted by submission time.
+     */
+    suspend fun getSubmissionsFromStudent(studentId: String): List<QuizSubmission> {
+        val submissionsSnapshot = db.collection("submissions")
+            .whereEqualTo("studentId", studentId)
+            .get()
+            .await()
+
+        val submissions = submissionsSnapshot.documents.mapNotNull { doc ->
+            doc.toObject(QuizSubmission::class.java)?.also { it.id = doc.id }
+        }
+
+        for (submission in submissions) {
+            val examDoc = db.collection("evaluations")
+                .document(submission.examId)
+                .get()
+                .await()
+            submission.course = examDoc.getString("course") ?: "Curso desconocido"
+            submission.examTitle = examDoc.getString("title") ?: "Examen sin título"
+        }
+
+        return submissions
+    }
+
+    /**
+     * Obtiene el promedio de notas de los últimos 6 meses del estudiante.
+     * Retorna una lista de pares (Mes, Promedio en porcentaje).
+     */
+    suspend fun getAverageScoresLast6Months(studentId: String): List<Pair<String, Float>> {
+        val submissionsSnapshot = db.collection("submissions")
+            .whereEqualTo("studentId", studentId)
+            .get()
+            .await()
+
+        val submissions = submissionsSnapshot.documents.mapNotNull { doc ->
+            doc.toObject(QuizSubmission::class.java)
+        }
+
+        val dateFormat = SimpleDateFormat("MMM", Locale.getDefault())
+        val monthLabels = mutableListOf<String>()
+        val monthYearPairs = mutableListOf<Pair<Int, Int>>()
+        
+        for (i in 5 downTo 0) {
+            val cal = Calendar.getInstance()
+            cal.add(Calendar.MONTH, -i)
+            monthLabels.add(dateFormat.format(cal.time))
+            monthYearPairs.add(Pair(cal.get(Calendar.MONTH), cal.get(Calendar.YEAR)))
+        }
+
+        val result = mutableListOf<Pair<String, Float>>()
+        for (i in 0..5) {
+            val (month, year) = monthYearPairs[i]
+            val monthSubmissions = submissions.filter { sub ->
+                val cal = Calendar.getInstance()
+                cal.timeInMillis = sub.submittedAt
+                cal.get(Calendar.MONTH) == month && cal.get(Calendar.YEAR) == year
+            }
+            if (monthSubmissions.isEmpty()) {
+                result.add(Pair(monthLabels[i], 0f))
+            } else {
+                val filtered = monthSubmissions.filter { it.total > 0 }
+                val avg = if (filtered.isEmpty()) 0f else filtered.map { it.score.toFloat() / it.total.toFloat() * 100f }.average().toFloat()
+                result.add(Pair(monthLabels[i], avg))
+            }
+        }
+        return result
     }
 
     suspend fun getCourses(): List<Course> {

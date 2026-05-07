@@ -101,7 +101,7 @@ fun StatsView(
                     examTitle = submission.examTitle,
                     course = submission.course
                 )
-            }
+            }.sortedByDescending { it.submittedAt }
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
@@ -390,16 +390,11 @@ fun StatsView(
                                 text = "Resultados recientes",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
-                            Text(
-                                text = "Ver todos",
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                color = primaryBlue
-                            )
                         }
                     }
 
                     // Results List
-                    items(results) { result ->
+                    items(results.takeLast(4)) { result ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),

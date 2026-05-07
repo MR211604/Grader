@@ -1,11 +1,18 @@
 package com.example.grader.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -19,13 +26,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.grader.contants.BACKGROUND_COLOR
-import com.example.grader.firebase.FirestoreHelper
 import com.example.grader.ui.components.GraderBottomNavigation
 import com.example.grader.ui.components.NavRoute
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.example.grader.ui.viewmodels.DateSortOrder
+import com.example.grader.ui.viewmodels.StudentViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,40 +39,23 @@ fun StudentScreen(
     studentId: String = "",
     currentRoute: NavRoute = NavRoute.EXAMS,
     onNavigate: (NavRoute) -> Unit = {},
-    onStartExam: (String) -> Unit = {}
+    onStartExam: (String) -> Unit = {},
+    viewModel: StudentViewModel = viewModel()
 ) {
     val primaryDark = Color(0xFF1E2772) // Dark blue background for header
-    
-    var assessments by remember { mutableStateOf<List<AssessmentItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) {
-        try {
-            val firestoreHelper = FirestoreHelper()
-            val exams = firestoreHelper.getStudentExams()
-            val dateFormatter = SimpleDateFormat("MMM dd", Locale.getDefault())
-            val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
-            
-            assessments = exams.map { exam ->
-                val dateObj = Date(exam.createdAt)
-                val isCompleted = if (studentId.isNotEmpty()) {
-                    firestoreHelper.hasStudentSubmittedExam(exam.id, studentId)
-                } else false
-                AssessmentItem(
-                    id = exam.id,
-                    title = exam.title,
-                    course = exam.course,
-                    date = dateFormatter.format(dateObj),
-                    time = timeFormatter.format(dateObj),
-                    questionsCount = exam.questionCount,
-                    status = if (isCompleted) AssessmentStatus.Completed else AssessmentStatus.Pending
-                )
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            isLoading = false
-        }
+    val assessments by viewModel.filteredAssessments.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val dateSortOrder by viewModel.dateSortOrder.collectAsState()
+    val selectedCourse by viewModel.selectedCourse.collectAsState()
+    val courses by viewModel.courses.collectAsState()
+
+    // Track whether the category filter row is visible
+    var showCategoryFilter by remember { mutableStateOf(false) }
+
+    LaunchedEffect(studentId) {
+        viewModel.loadData(studentId)
     }
 
     Scaffold(
@@ -119,12 +108,11 @@ fun StudentScreen(
                         .fillMaxSize()
                         .padding(horizontal = 16.dp)
                 ) {
-                    // Search Bar
-                    var searchQuery by remember { mutableStateOf("") }
+                    // ─── 1. Search Bar (filters by exam title) ──────────────
                     OutlinedTextField(
                         value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        placeholder = { Text("Buscar...") },
+                        onValueChange = { viewModel.onSearchQueryChanged(it) },
+                        placeholder = { Text("Buscar por título...") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -141,13 +129,14 @@ fun StudentScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Filters Row
+                    // ─── 2 & 3. Sort by date + Category filter toggle ───────
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        // Date sort toggle button
                         OutlinedButton(
-                            onClick = { /* Sort */ },
+                            onClick = { viewModel.toggleDateSortOrder() },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
@@ -158,21 +147,99 @@ fun StudentScreen(
                         ) {
                             Icon(Icons.Outlined.SwapVert, contentDescription = "Sort", modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Ordenar por fecha (Reciente)", fontWeight = FontWeight.SemiBold)
+                            Text(
+                                text = when (dateSortOrder) {
+                                    DateSortOrder.NEWEST_FIRST -> "Fecha (Reciente)"
+                                    DateSortOrder.OLDEST_FIRST -> "Fecha (Antiguo)"
+                                },
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1
+                            )
                         }
 
+                        // Category filter toggle button
                         OutlinedButton(
-                            onClick = { /* Filter */ },
+                            onClick = { showCategoryFilter = !showCategoryFilter },
                             modifier = Modifier.size(48.dp),
                             contentPadding = PaddingValues(0.dp),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = Color.White,
-                                contentColor = Color(0xFF333333)
+                                containerColor = if (selectedCourse != null || showCategoryFilter)
+                                    Color(0xFFE8EAF6) else Color.White,
+                                contentColor = if (selectedCourse != null || showCategoryFilter)
+                                    Color(0xFF1E2772) else Color(0xFF333333)
                             ),
                             border = borderStroke()
                         ) {
                             Icon(Icons.Outlined.FilterAlt, contentDescription = "Filter")
+                        }
+                    }
+
+                    // ─── 3. Category chip row (animated visibility) ─────────
+                    AnimatedVisibility(
+                        visible = showCategoryFilter,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Column {
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // "Todas" chip — clears the category filter
+                                FilterChip(
+                                    selected = selectedCourse == null,
+                                    onClick = { viewModel.onCourseSelected(null) },
+                                    label = { Text("Todas") },
+                                    leadingIcon = if (selectedCourse == null) {
+                                        {
+                                            Icon(
+                                                Icons.Outlined.Check,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    } else null,
+                                    shape = RoundedCornerShape(20.dp),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color(0xFF1E2772),
+                                        selectedLabelColor = Color.White,
+                                        selectedLeadingIconColor = Color.White
+                                    )
+                                )
+
+                                // One chip per course fetched from Firestore
+                                courses.forEach { course ->
+                                    FilterChip(
+                                        selected = selectedCourse == course.name,
+                                        onClick = {
+                                            viewModel.onCourseSelected(
+                                                if (selectedCourse == course.name) null else course.name
+                                            )
+                                        },
+                                        label = { Text(course.name) },
+                                        leadingIcon = if (selectedCourse == course.name) {
+                                            {
+                                                Icon(
+                                                    Icons.Outlined.Check,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        } else null,
+                                        shape = RoundedCornerShape(20.dp),
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = Color(0xFF1E2772),
+                                            selectedLabelColor = Color.White,
+                                            selectedLeadingIconColor = Color.White
+                                        )
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -185,7 +252,7 @@ fun StudentScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "PENDIENTES Y PRÓXIMOS",
+                            text = "LISTA DE EVALUACIONES",
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp,
                             color = Color(0xFF757575),
@@ -203,6 +270,29 @@ fun StudentScreen(
                     if (isLoading) {
                         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()
+                        }
+                    } else if (assessments.isEmpty()) {
+                        // Empty state when filters yield no results
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Outlined.SearchOff,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = Color(0xFFBDBDBD)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "No se encontraron evaluaciones",
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF9E9E9E)
+                                )
+                            }
                         }
                     } else {
                         // List
@@ -238,7 +328,9 @@ data class AssessmentItem(
     val date: String,
     val time: String,
     val questionsCount: Int,
-    val status: AssessmentStatus
+    val status: AssessmentStatus,
+    /** Raw timestamp for date sorting. */
+    val createdAtMillis: Long = 0L
 )
 
 @Composable

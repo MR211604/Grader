@@ -13,5 +13,7 @@ data class Question(
     var question: String = "",
     var options: List<String> = emptyList(),
     var correctAnswerIndex: Int = -1,
-    var type: String = "multiple_choice"
+    var type: String = "multiple_choice",
+    /** 0-based position index to preserve insertion order across Firestore reads. */
+    var order: Int = -1
 )

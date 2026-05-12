@@ -70,14 +70,15 @@ class FirestoreHelper {
         )
         batch.set(examRef, examData)
 
-        // Add each question as a sub-document
-        questions.forEach { question ->
+        // Add each question as a sub-document with its positional order
+        questions.forEachIndexed { index, question ->
             val questionRef = examRef.collection("questions").document()
             val questionData = hashMapOf(
                 "question" to question.question,
                 "options" to question.options,
                 "correctAnswerIndex" to question.correctAnswerIndex,
-                "type" to question.type
+                "type" to question.type,
+                "order" to index
             )
             batch.set(questionRef, questionData)
         }
@@ -120,14 +121,15 @@ class FirestoreHelper {
             batch.delete(doc.reference)
         }
 
-        // Add updated questions
-        updatedQuestions.forEach { question ->
+        // Add updated questions with their positional order
+        updatedQuestions.forEachIndexed { index, question ->
             val questionRef = examRef.collection("questions").document()
             val questionData = hashMapOf(
                 "question" to question.question,
                 "options" to question.options,
                 "correctAnswerIndex" to question.correctAnswerIndex,
-                "type" to question.type
+                "type" to question.type,
+                "order" to index
             )
             batch.set(questionRef, questionData)
         }
@@ -183,12 +185,13 @@ class FirestoreHelper {
         val snapshot = db.collection("evaluations")
             .document(examId)
             .collection("questions")
+            .orderBy("order")
             .get()
             .await()
 
         return snapshot.documents.mapNotNull { doc ->
             doc.toObject(Question::class.java)?.also { it.id = doc.id }
-        }
+        }.sortedBy { it.order }
     }
 
     /**
@@ -309,6 +312,34 @@ class FirestoreHelper {
             }
         }
         return result
+    }
+
+    /**
+     * Deletes an exam and all its questions from Firestore.
+     *
+     * @param examId The document ID of the exam to delete.
+     */
+    suspend fun deleteExam(examId: String) {
+        val examRef = db.collection("evaluations").document(examId)
+        
+        val batch = db.batch()
+
+        val questionsSnapshot = examRef.collection("questions").get().await()
+        questionsSnapshot.documents.forEach { doc ->
+            batch.delete(doc.reference)
+        }
+
+        // also delete any submissions related to this exam
+        val submissionsSnapshot = db.collection("submissions")
+            .whereEqualTo("examId", examId)
+            .get()
+            .await()
+        submissionsSnapshot.documents.forEach { doc ->
+            batch.delete(doc.reference)
+        }
+
+        batch.delete(examRef)
+        batch.commit().await()
     }
 
     suspend fun getCourses(): List<Course> {
